@@ -1,0 +1,140 @@
+To create environment → python -m venv myenv
+Activate the environment → .\myenv\Scripts\activate
+#Instal Django → if u created environment newly
+Create a new Django project:
+django-admin startproject student_registration
+cd student_registration
+Create a new Django app
+python manage.py startapp registration
+Add the new app to your project's settings:
+In student_registration/settings.py, add 'registration' to the INSTALLED_APPS
+INSTALLED_APPS = [
+ ...
+ 'registration',
+]
+Create the models in registration/models.py:
+from django.db import models
+class Student(models.Model):
+ first_name = models.CharField(max_length=50)
+ last_name = models.CharField(max_length=50)
+ email = models.EmailField(unique=True)
+ def __str__(self):
+ return f'{self.first_name} {self.last_name}'
+class Course(models.Model):
+ name = models.CharField(max_length=100)
+ description = models.TextField()
+ def __str__(self):
+ return self.name
+class Enrollment(models.Model):
+ student = models.ForeignKey(Student, on_delete=models.CASCADE)
+ course = models.ForeignKey(Course, on_delete=models.CASCADE)
+enrolled_at = models.DateTimeField(auto_now_add=True)
+ class Meta:
+ unique_together = ('student', 'course')
+ def __str__(self):
+ return f'{self.student} enrolled in {self.course}'
+Run migrations to create the database schema:
+python manage.py makemigrations
+python manage.py migrate
+admin interface registration/admin.py
+from django.contrib import admin
+from .models import Student, Course, Enrollment
+admin.site.register(Student)
+admin.site.register(Course)
+admin.site.register(Enrollment)
+Create views for registration and displaying enrolled students in registration/views.py:
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Student, Course, Enrollment
+from django.http import HttpResponse
+def course_list(request):
+ courses = Course.objects.all()
+ return render(request, 'registration/course_list.html', {'courses': courses})
+def enroll_student(request, course_id):
+ course = get_object_or_404(Course, id=course_id)
+ students = Student.objects.all()
+ if request.method == 'POST':
+ student_id = request.POST.get('student')
+ student = get_object_or_404(Student, id=student_id)
+ Enrollment.objects.create(student=student, course=course)
+ return redirect('course_list')
+ return render(request, 'registration/enroll_student.html', {'course': course, 'students': students})
+def enrolled_students(request, course_id):
+ course = get_object_or_404(Course, id=course_id)
+ enrollments = Enrollment.objects.filter(course=course)
+ return render(request, 'registration/enrolled_students.html', {'course': course, 'enrollments':
+enrollments})
+Create URLs for these views in registration/urls.py:
+from django.urls import path
+from . import views
+urlpatterns = [
+ path('', views.course_list, name='course_list'),
+ path('course/<int:course_id>/enroll/', views.enroll_student, name='enroll_student'),
+ path('course/<int:course_id>/students/', views.enrolled_students, name='enrolled_students'),
+]
+Project folder student_registration/urls.py
+from django.contrib import admin
+from django.urls import path, include
+urlpatterns = [
+ path('admin/', admin.site.urls),
+ path('registration/', include('registration.urls')),
+]
+Create templates for each view:
+registration/templates/registration/course_list.html
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Courses</title>
+</head>
+<body>
+ <h1>Courses</h1>
+ <ul>
+ {% for course in courses %}
+ <li>
+ {{ course.name }} - <a href="{% url 'enroll_student' course.id %}">Enroll</a> -
+ <a href="{% url 'enrolled_students' course.id %}">View Students</a>
+ </li>
+ {% endfor %}
+ </ul>
+</body>
+</html>
+registration/templates/registration/enroll_student.html
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Enroll Student</title>
+</head>
+<body>
+ <h1>Enroll Student in {{ course.name }}</h1>
+ <form method="post">
+ {% csrf_token %}
+ <select name="student">
+ {% for student in students %}
+ <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name
+}}</option>
+ {% endfor %}
+ </select>
+ <button type="submit">Enroll</button>
+ </form>
+</body>
+</html>
+registration/templates/registration/enrolled_students.html:
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Enrolled Students</title>
+</head>
+<body>
+ <h1>Students Enrolled in {{ course.name }}</h1>
+ <ul>
+ {% for enrollment in enrollments %}
+ <li>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</li>
+ {% endfor %}
+ </ul>
+</body>
+</html>
+To create superuser
+Python manage.py createsuperuser
+To run
+Python manage.py runserver
+Ouput link → http://127.0.0.1:8000/admin/ add student name, course, enrolment
+Test app → http://127.0.0.1:8000/registration/
