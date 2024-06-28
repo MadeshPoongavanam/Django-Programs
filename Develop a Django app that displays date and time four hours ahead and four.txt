@@ -1,0 +1,29 @@
+django-admin startproject time_project
+cd time_project
+Create a new Django app
+python manage.py startapp time_app
+time_app/views
+from django.http import HttpResponse
+from datetime import datetime
+def current_datetime(request):
+ now1 = datetime.now() – timedelta(hours=4)
+ now2 = datetime.now() + timedelta(hours=4)
+ html = "<html><body>Current date and time 4hrs ago: {}<br>.format(now1)
+ Current date and time 4hrs after: <br>{}</body></html>".format(now2)
+ return HttpResponse(html)
+
+time_project/urls.py
+from django.contrib import admin
+from django.urls import path, include
+urlpatterns = [
+ path('admin/', admin.site.urls),
+ path('time/', include('time_app.urls')),
+]
+#Create a new file called urls.py inside the time_app directory
+from django.urls import path
+from . import views
+urlpatterns = [
+ path('', views.current_datetime, name='current_datetime'),
+]
+to run
+Python manage.py runserver
