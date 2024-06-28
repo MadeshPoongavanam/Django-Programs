@@ -1,0 +1,30 @@
+To create environment → python -m venv myenv
+Activate the environment → .\myenv\Scripts\activate
+#Instal Django → pip install django #if u created environment newly
+Create a new Django project:
+django-admin startproject time_project
+cd time_project
+Create a new Django app
+python manage.py startapp time_app
+time_app/views
+from django.http import HttpResponse
+from datetime import datetime
+def current_datetime(request):
+ now = datetime.now()
+ html = "<html><body>Current date and time: {}</body></html>".format(now)
+ return HttpResponse(html)
+time_project/urls.py
+from django.contrib import admin
+from django.urls import path, include
+urlpatterns = [
+ path('admin/', admin.site.urls),
+ path('time/', include('time_app.urls')),
+]
+#Create a new file called urls.py inside the time_app directory
+from django.urls import path
+from . import views
+urlpatterns = [
+ path('', views.current_datetime, name='current_datetime'),
+]
+to run
+Python manage.py runserver
